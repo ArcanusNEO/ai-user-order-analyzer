@@ -166,6 +166,7 @@ const merge2Db = async (rows) => {
     const grp = rowsGroup[key]
     const rec = recordsMap[key]
     const merged = rec ? mergeRows([...grp, rec]) : mergeRows(grp)
+    if (rec?.maxInvoiceId >= merged?.maxInvoiceId) continue
     if (merged) res.push(merged)
   }
   for (const row of res) {
