@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import funnel, { verbose, date } from '../impl/funnel.js'
+import main, { verbose, date } from '../impl/main.js'
 import DateUtils from '../utils/date.js'
 import retry from '../utils/retry.js'
 import * as pg from '../utils/postgres.js'
 import * as feishu from '../utils/feishu.js'
 
 try {
-  const answer = await retry(async () => funnel(date), { delay: 60000 })
+  const answer = await retry(async () => main(date), { delay: 60000 })
   console.log(JSON.stringify(answer.lite))
   if (verbose) console.log(JSON.stringify(answer.full))
   await pg.query(

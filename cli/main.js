@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import funnel, { verbose, date } from '../impl/funnel.js'
+import main, { verbose, date } from '../impl/main.js'
 
 try {
-  const answer = await funnel(date)
+  const answer = await main(date)
   console.log(JSON.stringify(answer.lite))
   if (verbose) console.error(JSON.stringify(answer.full))
 } catch (err) {

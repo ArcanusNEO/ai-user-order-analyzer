@@ -3,6 +3,7 @@ import retry from './retry.js'
 export default (token, { verbose = false, } = {}) => {
   const CONNECTION = {
     'gen-p-prd-shard-30': '5dba6c03-abda-429c-8d23-7979f2e48ff9',
+    'gen-np-prd-shard-30': 'fa47d900-1908-4548-95fa-3691bcc29682',
     'volc-cdp-prd-starrocks-tuanjie_analytics': 'd68a603e-16fa-414f-8099-ad4db102e618',
     'codesearch-prd-psql-readonly': 'bef50473-8dfa-46f7-b248-5fb36766e098',
     'litellm-prd-psql-readonly': 'a1f5949e-8a61-41b9-99ef-b59b03a7c5ac',
