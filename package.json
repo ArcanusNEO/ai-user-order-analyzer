@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "decimal.js": "^10.6.0",
     "pg": "^8.21.0"
   }
 }
