@@ -126,9 +126,7 @@ const queryUserPayments = async (orderItems) => {
 const mergeRows = (rows) => {
   if (!rows?.length) return null
   rows.sort((a, b) => (a.maxInvoiceId < b.maxInvoiceId) - (a.maxInvoiceId > b.maxInvoiceId))
-  const ret = {}
-  const quantity = new Decimal('0')
-  const amount = new Decimal('0')
+  const ret = { quantity: new Decimal('0'), amount: new Decimal('0') }
   for (const row of rows) {
     ret.orderId = ret.orderId || row.orderId
     ret.itemId = ret.itemId || row.itemId
@@ -138,8 +136,8 @@ const mergeRows = (rows) => {
     ret.email = ret.email || row.email
     ret.planName = ret.planName || row.planName
     ret.planType = ret.planType || row.planType
-    quantity = quantity.plus(row.quantity || '0')
-    amount = amount.plus(row.amount || '0')
+    ret.quantity = ret.quantity.plus(new Decimal(row.quantity || '0'))
+    ret.amount = ret.amount.plus(new Decimal(row.amount || '0'))
     ret.currency = ret.currency || row.currency
     ret.paymentMethod = ret.paymentMethod || row.paymentMethod
     ret.isGift = ret.isGift || row.isGift
@@ -150,8 +148,6 @@ const mergeRows = (rows) => {
     ret.item = ret.item || row.item
     ret.payload = ret.payload || row.payload
   }
-  ret.quantity = quantity.toString()
-  ret.amount = amount.toString()
   return ret
 }
 
