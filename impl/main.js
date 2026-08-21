@@ -93,7 +93,8 @@ const queryNew = async (type, begin, end) => {
 }
 
 const queryUserPayments = async (orderItems) => {
-  const { rows } = await pg.query('select * from ai_dashboard.user_payment where (order_id, item_id) = any($1)', [orderItems])
+  const { rows } = await pg.query(`select * from ai_dashboard.user_payment where (order_id, item_id) in ${"('" + orderItems.map(row => row.join("','")).join("'),('") + "')"}`)
+  if (!rows?.length) return []
   const ret = []
   for (const row of rows) {
     const { order_id, item_id, max_invoice_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload, updated_at } = row
