@@ -1,5 +1,0 @@
-#!/bin/bash
-set -eo pipefail
-. /usr/local/etc/passenv
-cd /srv/ai-dau-analyzer
-exec /usr/bin/node cron/funnel.js "$@"

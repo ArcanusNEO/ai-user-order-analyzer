@@ -1,6 +1,5 @@
 import { parseArgs } from 'node:util'
 import SREDBManager from '../utils/SREDBManager.js'
-import DateUtils from '../utils/date.js'
 import retry from '../utils/retry.js'
 import * as pg from '../utils/postgres.js'
 import Decimal from 'decimal.js'
@@ -21,7 +20,7 @@ const parseOptions = () => {
   if (args.positionals.length === 1)
     ret.date = new Date(args.positionals[0])
   if (!ret.date || isNaN(ret.date.getTime()))
-    ret.date = new Date(DateUtils['yyyy-MM-dd'](new Date()))
+    ret.date = new Date()
   return ret
 }
 
@@ -29,9 +28,9 @@ export const { verbose, token, date } = parseOptions()
 
 const db = SREDBManager(token, { verbose })
 
-const querySubs = async (begin, end) => {
+const queryNew = async (type, begin, end) => {
   const categorys = await retry(async () => {
-    const response = await fetch('https://api.unity.cn/v1/items?categorySlug=tuanjie-ai-agent')
+    const response = await fetch(`https://api.unity.cn/v1/items?categorySlug=${['tuanjie-ai-agent', 'tuanjie-ai-agent-topup'][type]}`)
     if (!response.ok)
       throw Error(`Failed to connect to Unity API: ${response}`)
     return response.json()
@@ -41,7 +40,7 @@ const querySubs = async (begin, end) => {
   const categoryIdMap = Object.fromEntries(categorys.results.map(item => [item.id, item]))
   const { rows } = await db.query(
     'gen-np-prd-shard-30',
-    `select i.order_id, item ->> 'itemId' item_id, i.id, i.d365_invoice_payload -> 'organization' ->> 'organizationId' user_id, i.d365_invoice_payload -> 'organization' ->> 'name' user_name, i.d365_invoice_payload -> 'organization' ->> 'email' email, item ->> 'description' plan_name, cast(item ->> 'quantity' as bigint) quantity, cast(item ->> 'lineAmount' as numeric) + cast(item ->> 'taxAmount' as numeric) amount, i.currency, i.pi_type payment_method, cast(item ->> 'lineAmount' as numeric) = 0 is_gift, o.order_status_id status, o.purchase_time paid_at, item ->> 'paymentEndDate' expires_at, i.created_time, item, i.d365_invoice_payload payload from subscription.subscription_d365_invoice i cross join lateral json_array_elements(d365_invoice_payload -> 'invoiceItems') item join "order".user_order o on i.order_id = o.order_id where i.created_time >= '${begin.toISOString()}' and i.created_time < '${end.toISOString()}' and item ->> 'itemId' in ${"('" + allItems.join("','") + "')"}`
+    `select i.order_id, item ->> 'itemId' item_id, i.id, i.d365_invoice_payload -> 'organization' ->> 'organizationId' user_id, i.d365_invoice_payload -> 'organization' ->> 'name' user_name, i.d365_invoice_payload -> 'organization' ->> 'email' email, item ->> 'description' plan_name, cast(item ->> 'quantity' as bigint) quantity, cast(item ->> 'lineAmount' as numeric) + cast(item ->> 'taxAmount' as numeric) amount, i.currency, i.pi_type payment_method, cast(item ->> 'lineAmount' as numeric) = 0 is_gift, o.order_status_id status, o.purchase_time paid_at, item ->> 'paymentEndDate' expires_at, i.created_time, item, i.d365_invoice_payload payload from ${['invoice.invoice', 'subscription.subscription_d365_invoice'][type]} i cross join lateral json_array_elements(i.d365_invoice_payload -> 'invoiceItems') item join "order".user_order o on i.order_id = o.order_id where i.created_time >= '${begin.toISOString()}' and i.created_time < '${end.toISOString()}' and item ->> 'itemId' in ${"('" + allItems.join("','") + "')"}`
   )
   if (!rows.length) return []
   const ret = []
@@ -156,6 +155,7 @@ const mergeRows = (rows) => {
 }
 
 const merge2Db = async (rows) => {
+  if (!rows?.length) return
   const orderItems = [...new Set(rows.map(row => [row.orderId, row.itemId]))]
   const rowsGroup = Object.groupBy(rows, row => `${row.orderId}:${row.itemId}`)
   const records = await queryUserPayments(orderItems)
@@ -180,9 +180,10 @@ const merge2Db = async (rows) => {
 
 export default async () => {
   const begin = new Date(date)
+  begin.setHours(begin.getHours() - 1)
+  begin.setMinutes(begin.getMinutes() - 10)
   const end = new Date(date)
-  begin.setDate(begin.getDate() - 1)
-  const rows = await querySubs(begin, end)
+  const rows = [...await queryNew(0, begin, end), ...await queryNew(1, begin, end)]
   await merge2Db(rows)
 }
 

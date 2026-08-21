@@ -1,0 +1,5 @@
+#!/bin/bash
+set -eo pipefail
+. /usr/local/etc/passenv
+cd /srv/ai-user-order-analyzer
+exec /usr/bin/node cron/main.js "$@"
