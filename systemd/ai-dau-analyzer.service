@@ -1,0 +1,10 @@
+[Unit]
+Description=The AI DAU analyzer service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/funnel
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=The AI DAU analyzer timer
+
+[Timer]
+OnCalendar=*-*-* 00:30:00
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
