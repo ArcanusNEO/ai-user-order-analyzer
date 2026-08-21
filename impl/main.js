@@ -148,6 +148,8 @@ const mergeRows = (rows) => {
     ret.item = ret.item || row.item
     ret.payload = ret.payload || row.payload
   }
+  ret.quantity = ret.quantity.toString()
+  ret.amount = ret.amount.toString()
   return ret
 }
 
