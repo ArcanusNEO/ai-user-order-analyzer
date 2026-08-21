@@ -1,5 +1,5 @@
 [Unit]
-Description=The AI DAU analyzer service
+Description=The AI User Order Analyzer service
 After=network.target
 
 [Service]

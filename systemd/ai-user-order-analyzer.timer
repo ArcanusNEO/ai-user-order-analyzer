@@ -1,8 +1,8 @@
 [Unit]
-Description=The AI DAU analyzer timer
+Description=The AI User Order Analyzer timer
 
 [Timer]
-OnCalendar=*-*-* 00:30:00
+OnCalendar=*:13:17
 Persistent=true
 
 [Install]
