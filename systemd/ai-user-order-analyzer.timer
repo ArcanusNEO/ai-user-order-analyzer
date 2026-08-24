@@ -2,7 +2,7 @@
 Description=The AI User Order Analyzer timer
 
 [Timer]
-OnCalendar=*:13:17
+OnCalendar=*-*-* *:13:17
 Persistent=true
 
 [Install]
