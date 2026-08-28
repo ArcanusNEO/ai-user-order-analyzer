@@ -45,7 +45,7 @@ const queryInvoice = async (type, begin, end) => {
   const ret = []
 
   for (const row of rows) {
-    if (!row.item_id) continue
+    if (row.invoice_item_id == null || row.item_id == null) continue
     const category = categoryIdMap[row.item_id]
     if (!category) continue
     row.plan_type = category.type
