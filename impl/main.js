@@ -72,9 +72,8 @@ const insertInvoice = async (rows) => {
 export default async () => {
   const begin = new Date(date)
   begin.setHours(begin.getHours() - 1)
-  begin.setMinutes(begin.getMinutes() - 10)
+  begin.setMinutes(begin.getMinutes() - 15)
   const end = new Date(date)
-  end.setMinutes(end.getMinutes() - 10)
   const rows = [...await queryInvoice(0, begin, end), ...await queryInvoice(1, begin, end)]
   await insertInvoice(rows)
 }
