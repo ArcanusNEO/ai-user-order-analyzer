@@ -49,9 +49,9 @@ const queryInvoice = async (type, begin, end) => {
     const category = categoryIdMap[row.item_id]
     if (!category) continue
     row.plan_type = category.type
-    row.paid_at = new Date(row.paid_at)
-    row.expires_at = new Date(row.expires_at)
-    row.created_time = new Date(row.created_time)
+    if (row.paid_at != null) row.paid_at = new Date(row.paid_at)
+    if (row.expires_at != null) row.expires_at = new Date(row.expires_at)
+    if (row.created_time != null) row.created_time = new Date(row.created_time)
     ret.push(row)
   }
   return ret
@@ -59,7 +59,7 @@ const queryInvoice = async (type, begin, end) => {
 
 const insertInvoice = async (rows) => {
   if (!rows?.length) return
-  return Promise.all(rows.map(row => {
+  return Promise.allSettled(rows.map(row => {
     const { invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload } = row
     return pg.query(
       `insert into ai_dashboard.user_payment (invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) on conflict (invoice_item_id) do update set invoice_item_id = excluded.invoice_item_id, order_id = excluded.order_id, item_id = excluded.item_id, user_id = excluded.user_id, user_name = excluded.user_name, email = excluded.email, plan_name = excluded.plan_name, plan_type = excluded.plan_type, quantity = excluded.quantity, amount = excluded.amount, currency = excluded.currency, payment_method = excluded.payment_method, is_gift = excluded.is_gift, status = excluded.status, paid_at = excluded.paid_at, expires_at = excluded.expires_at, item = excluded.item, payload = excluded.payload, updated_at = current_timestamp`,
