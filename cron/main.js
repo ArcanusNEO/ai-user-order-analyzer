@@ -9,7 +9,6 @@ try {
 } catch (err) {
   console.error(err)
   await feishu.send(process.env.FEISHU_WEBHOOK_URL, err.stack)
-  process.exitCode = 1
 } finally {
   await pg.close()
 }
