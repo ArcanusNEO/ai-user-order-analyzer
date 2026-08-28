@@ -59,13 +59,13 @@ const queryInvoice = async (type, begin, end) => {
 
 const insertInvoice = async (rows) => {
   if (!rows?.length) return
-  for (const row of rows) {
+  return Promise.all(rows.map(row => {
     const { invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload } = row
-    await pg.query(
+    return pg.query(
       `insert into ai_dashboard.user_payment (invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) on conflict (invoice_item_id) do update set invoice_item_id = excluded.invoice_item_id, order_id = excluded.order_id, item_id = excluded.item_id, user_id = excluded.user_id, user_name = excluded.user_name, email = excluded.email, plan_name = excluded.plan_name, plan_type = excluded.plan_type, quantity = excluded.quantity, amount = excluded.amount, currency = excluded.currency, payment_method = excluded.payment_method, is_gift = excluded.is_gift, status = excluded.status, paid_at = excluded.paid_at, expires_at = excluded.expires_at, item = excluded.item, payload = excluded.payload, updated_at = current_timestamp`,
       [invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload]
     )
-  }
+  }))
 }
 
 export default async () => {
@@ -74,6 +74,5 @@ export default async () => {
   begin.setMinutes(begin.getMinutes() - 15)
   const end = new Date(date)
   const rows = [...await queryInvoice(0, begin, end), ...await queryInvoice(1, begin, end)]
-  await insertInvoice(rows)
+  return insertInvoice(rows)
 }
-
