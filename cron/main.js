@@ -11,5 +11,5 @@ try {
   await feishu.send(process.env.FEISHU_WEBHOOK_URL, err.stack)
   process.exitCode = 1
 } finally {
-  pg.close()
+  await pg.close()
 }
