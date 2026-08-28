@@ -2,7 +2,6 @@ import { parseArgs } from 'node:util'
 import SREDBManager from '../utils/SREDBManager.js'
 import retry from '../utils/retry.js'
 import * as pg from '../utils/postgres.js'
-import Decimal from 'decimal.js'
 
 const parseOptions = () => {
   const args = parseArgs({
