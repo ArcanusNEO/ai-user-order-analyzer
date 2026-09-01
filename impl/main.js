@@ -57,7 +57,7 @@ const queryInvoice = async (type, begin, end) => {
   return ret
 }
 
-const insertInvoice = async (rows) => {
+const upsertInvoice = async (rows) => {
   if (!rows?.length) return
   return Promise.all(rows.map(row => {
     const { invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload } = row
@@ -74,5 +74,5 @@ export default async () => {
   begin.setMinutes(begin.getMinutes() - 15)
   const end = new Date(date)
   const rows = [...await queryInvoice(0, begin, end), ...await queryInvoice(1, begin, end)]
-  return insertInvoice(rows)
+  return upsertInvoice(rows)
 }
