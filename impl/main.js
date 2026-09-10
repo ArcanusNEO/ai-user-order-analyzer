@@ -70,8 +70,8 @@ const upsertInvoice = async (rows) => {
 
 export default async () => {
   const begin = new Date(date)
-  begin.setHours(begin.getHours() - 1)
-  begin.setMinutes(begin.getMinutes() - 15)
+  // begin.setHours(begin.getHours() - 1)
+  begin.setMinutes(begin.getMinutes() - 23)
   const end = new Date(date)
   const rows = [...await queryInvoice(0, begin, end), ...await queryInvoice(1, begin, end)]
   return upsertInvoice(rows)
