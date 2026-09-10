@@ -39,7 +39,7 @@ const queryInvoice = async (type, begin, end) => {
   const categoryIdMap = Object.fromEntries(categorys.results.map(item => [item.id, item]))
   const { rows } = await db.query(
     'gen-np-prd-shard-30',
-    `select item ->> 'genesisSubscriptionId' subscription_id, item ->> 'invoiceItemId' invoice_item_id, i.order_id, item ->> 'itemId' item_id, i.d365_invoice_payload -> 'organization' ->> 'organizationId' user_id, i.d365_invoice_payload -> 'organization' ->> 'name' user_name, i.d365_invoice_payload -> 'organization' ->> 'email' email, item ->> 'description' plan_name, cast(item ->> 'quantity' as bigint) quantity, cast(item ->> 'lineAmount' as numeric) + cast(item ->> 'taxAmount' as numeric) amount, i.currency, i.pi_type payment_method, cast(item ->> 'lineAmount' as numeric) = 0 is_gift, case when cast(item ->> 'quantity' as bigint) >= 0 then 'success' else 'refunded' end status, i.created_time paid_at, item ->> 'paymentEndDate' expires_at, i.created_time, item, i.d365_invoice_payload payload from ${['subscription.subscription_d365_invoice', 'invoice.invoice'][type]} i cross join lateral json_array_elements(i.d365_invoice_payload -> 'invoiceItems') item where i.updated_time >= '${begin.toISOString()}' and i.updated_time < '${end.toISOString()}' and item ->> 'itemId' in ${"('" + allItems.join("','") + "')"}`
+    `select item ->> 'genesisSubscriptionId' subscription_id, item ->> 'invoiceItemId' invoice_item_id, i.order_id, item ->> 'itemId' item_id, i.d365_invoice_payload -> 'organization' ->> 'organizationId' user_id, i.d365_invoice_payload -> 'organization' ->> 'name' user_name, i.d365_invoice_payload -> 'organization' ->> 'email' email, item ->> 'description' plan_name, cast(item ->> 'quantity' as bigint) quantity, cast(item ->> 'lineAmount' as numeric) + cast(item ->> 'taxAmount' as numeric) amount, i.currency, i.pi_type payment_method, cast(item ->> 'lineAmount' as numeric) = 0 is_gift, case when cast(item ->> 'quantity' as bigint) >= 0 then 'success' else 'refunded' end status, i.created_time paid_at, item ->> 'paymentEndDate' expires_at, i.created_time, i.updated_time, item, i.d365_invoice_payload payload, current_timestamp synced_at from ${['subscription.subscription_d365_invoice', 'invoice.invoice'][type]} i cross join lateral json_array_elements(i.d365_invoice_payload -> 'invoiceItems') item where i.updated_time >= '${begin.toISOString()}' and i.updated_time < '${end.toISOString()}' and item ->> 'itemId' in ${"('" + allItems.join("','") + "')"}`
   )
   if (!rows.length) return []
   const ret = []
@@ -49,9 +49,11 @@ const queryInvoice = async (type, begin, end) => {
     const category = categoryIdMap[row.item_id]
     if (!category) continue
     row.plan_type = category.type
-    if (row.paid_at != null) row.paid_at = new Date(row.paid_at)
-    if (row.expires_at != null) row.expires_at = new Date(row.expires_at)
-    if (row.created_time != null) row.created_time = new Date(row.created_time)
+    row.paid_at &&= new Date(row.paid_at)
+    row.expires_at &&= new Date(row.expires_at)
+    row.created_time = new Date(row.created_time)
+    row.updated_time = new Date(row.updated_time)
+    row.synced_at = new Date(row.synced_at)
     ret.push(row)
   }
   return ret
@@ -60,17 +62,17 @@ const queryInvoice = async (type, begin, end) => {
 const upsertInvoice = async (rows) => {
   if (!rows?.length) return
   return Promise.all(rows.map(row => {
-    const { subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload } = row
+    const { subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, created_time, updated_time, item, payload, synced_at } = row
     return pg.query(
-      `insert into ai_dashboard.user_payment (subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) on conflict (invoice_item_id) do update set subscription_id = excluded.subscription_id, invoice_item_id = excluded.invoice_item_id, order_id = excluded.order_id, item_id = excluded.item_id, user_id = excluded.user_id, user_name = excluded.user_name, email = excluded.email, plan_name = excluded.plan_name, plan_type = excluded.plan_type, quantity = excluded.quantity, amount = excluded.amount, currency = excluded.currency, payment_method = excluded.payment_method, is_gift = excluded.is_gift, status = excluded.status, paid_at = excluded.paid_at, expires_at = excluded.expires_at, item = excluded.item, payload = excluded.payload, updated_at = current_timestamp`,
-      [subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, item, payload]
+      `insert into ai_dashboard.user_payment (subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, created_at, updated_at, item, payload, synced_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) on conflict (invoice_item_id) do update set subscription_id = excluded.subscription_id, invoice_item_id = excluded.invoice_item_id, order_id = excluded.order_id, item_id = excluded.item_id, user_id = excluded.user_id, user_name = excluded.user_name, email = excluded.email, plan_name = excluded.plan_name, plan_type = excluded.plan_type, quantity = excluded.quantity, amount = excluded.amount, currency = excluded.currency, payment_method = excluded.payment_method, is_gift = excluded.is_gift, status = excluded.status, paid_at = excluded.paid_at, expires_at = excluded.expires_at, created_at = excluded.created_at, updated_at = excluded.updated_at, item = excluded.item, payload = excluded.payload, synced_at = excluded.synced_at`,
+      [subscription_id, invoice_item_id, order_id, item_id, user_id, user_name, email, plan_name, plan_type, quantity, amount, currency, payment_method, is_gift, status, paid_at, expires_at, created_time, updated_time, item, payload, synced_at]
     )
   }))
 }
 
 export default async () => {
   const begin = new Date(date)
-  // begin.setHours(begin.getHours() - 1)
+  // begin.setDate(begin.getDate() - 60)
   begin.setMinutes(begin.getMinutes() - 23)
   const end = new Date(date)
   const rows = [...await queryInvoice(0, begin, end), ...await queryInvoice(1, begin, end)]
